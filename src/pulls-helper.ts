@@ -95,13 +95,11 @@ export class PullsHelper {
             )
           } else {
             // comment on PR
-            try {
-              commentParams.pullRequestId = p.node.id
-
-              this.graphqlClient<Comments>(commentQuery, commentParams)
-            } catch (error) {
-              core.warning(error)
-            }
+            commentParams.pullRequestId = p.node.id
+            this.graphqlClient<Comments>(
+              commentQuery,
+              commentParams
+            ).catch(error => core.warning(error))
           }
         }
       })
