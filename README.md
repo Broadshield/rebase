@@ -14,7 +14,7 @@ Pull requests from forks are rebaseable only if they [allow edits from maintaine
 
 <!-- start usage -->
 ```yaml
-- uses: peter-evans/rebase@v1.0.11
+- uses: peter-evans/rebase@v1.0.12
   with:
     # GitHub auth token
     # Default: ${{ github.token }}
@@ -41,6 +41,11 @@ Pull requests from forks are rebaseable only if they [allow edits from maintaine
     # The default branch for the repo, defaults to master
     # Default: master
     default-branch: ''
+
+    # The Dependabot PR's require a PR Comment to rebase them. When this is `true` a
+    # comment will be added: `@dependabot rebase`
+    # Default: true
+    handle-dependabot: ''
 ```
 <!-- end usage -->
 
@@ -57,7 +62,7 @@ jobs:
   rebase:
     runs-on: Ubuntu-20.04
     steps:
-      - uses: peter-evans/rebase@v1.0.11
+      - uses: peter-evans/rebase@v1.0.12
 ```
 
 ### Rebase all pull requests on push to the base branch
@@ -71,7 +76,7 @@ jobs:
   rebase:
     runs-on: Ubuntu-20.04
     steps:
-      - uses: peter-evans/rebase@v1.0.11
+      - uses: peter-evans/rebase@v1.0.12
         with:
           base: master
 ```
@@ -88,7 +93,7 @@ jobs:
   rebase:
     runs-on: Ubuntu-20.04
     steps:
-      - uses: peter-evans/rebase@v1.0.11
+      - uses: peter-evans/rebase@v1.0.12
         with:
           base: dev
           default-branch: dev
@@ -152,7 +157,7 @@ jobs:
         repo: ['my-org/repo1', 'my-org/repo2', 'my-org/repo3']
     runs-on: Ubuntu-20.04
     steps:
-      - uses: peter-evans/rebase@v1.0.11
+      - uses: peter-evans/rebase@v1.0.12
         with:
           token: ${{ secrets.PAT }}
           repository: ${{ matrix.repo }}

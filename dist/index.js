@@ -492,12 +492,13 @@ function run() {
                 base: core.getInput('base'),
                 preRebaseCmd: core.getInput('command-to-run-before-rebase'),
                 onConflictCommand: core.getInput('command-to-run-on-conflict'),
-                defaultBranch: core.getInput('default-branch')
+                defaultBranch: core.getInput('default-branch'),
+                handleDependabot: core.getInput('handle-dependabot') === 'true'
             };
             core.debug(`Inputs: ${util_1.inspect(inputs)}`);
             const [headOwner, head] = inputValidator.parseHead(inputs.head);
             const pullsHelper = new pulls_helper_1.PullsHelper(inputs.token);
-            const pulls = yield pullsHelper.get(inputs.repository, head, headOwner, inputs.base);
+            const pulls = yield pullsHelper.get(inputs.repository, head, headOwner, inputs.base, inputs.handleDependabot);
             if (pulls.length > 0) {
                 core.info(`${pulls.length} pull request(s) found.`);
                 // Checkout
@@ -604,22 +605,46 @@ class PullsHelper {
             }
         });
     }
-    get(repository, head, headOwner, base) {
+    get(repository, head, headOwner, base, handleDependabot) {
         return __awaiter(this, void 0, void 0, function* () {
             const [owner, repo] = repository.split('/');
             const params = {
-                owner: owner,
-                repo: repo
+                owner,
+                repo
+            };
+            const commentParams = {
+                owner,
+                repo,
+                body: '@dependabot rebase'
             };
             if (head.length > 0)
                 params.head = head;
             if (base.length > 0)
                 params.base = base;
+            const commentQuery = `mutation AddPullRequestCommentMutation($pullRequestId: ID!, $body: String!) {
+      addComment(input: {body: $body, subjectId: $pullRequestId}) {
+        
+        subject {
+          ... on PullRequest {
+            id
+            title
+            comments(last: 1) {
+              nodes {
+                id
+                body
+              }
+            }
+          }
+        }
+      }
+    }`;
             const query = `query Pulls($owner: String!, $repo: String!, $head: String, $base: String) {
       repository(owner:$owner, name:$repo) {
         pullRequests(first: 100, states: OPEN, headRefName: $head, baseRefName: $base) {
           edges {
             node {
+              id
+              title
               baseRefName
               headRefName
               headRepository {
@@ -646,7 +671,19 @@ class PullsHelper {
                     // Filter heads from forks where 'maintainer can modify' is false
                     (p.node.headRepositoryOwner.login == owner ||
                         p.node.maintainerCanModify)) {
-                    return new Pull(p.node.baseRefName, p.node.headRepository.url, p.node.headRepository.nameWithOwner, p.node.headRefName);
+                    if (!(handleDependabot && p.node.title.startsWith('Bump '))) {
+                        return new Pull(p.node.baseRefName, p.node.headRepository.url, p.node.headRepository.nameWithOwner, p.node.headRefName);
+                    }
+                    else {
+                        // comment on PR
+                        try {
+                            commentParams.pullRequestId = p.node.id;
+                            this.graphqlClient(commentQuery, commentParams);
+                        }
+                        catch (error) {
+                            core.warning(error);
+                        }
+                    }
                 }
             })
                 .filter(notUndefined);
@@ -2876,7 +2913,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 var request = __nccwpck_require__(6234);
 var universalUserAgent = __nccwpck_require__(5030);
 
-const VERSION = "4.6.0";
+const VERSION = "4.6.1";
 
 class GraphqlError extends Error {
   constructor(request, response) {
@@ -2899,10 +2936,18 @@ class GraphqlError extends Error {
 }
 
 const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query", "mediaType"];
+const FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
 const GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
 function graphql(request, query, options) {
-  if (typeof query === "string" && options && "query" in options) {
-    return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
+  if (options) {
+    if (typeof query === "string" && "query" in options) {
+      return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
+    }
+
+    for (const key in options) {
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
+      return Promise.reject(new Error(`[@octokit/graphql] "${key}" cannot be used as variable name`));
+    }
   }
 
   const parsedOptions = typeof query === "string" ? Object.assign({
@@ -10581,7 +10626,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 var request = __nccwpck_require__(3290);
 var universalUserAgent = __nccwpck_require__(2034);
 
-const VERSION = "4.6.0";
+const VERSION = "4.6.1";
 
 class GraphqlError extends Error {
   constructor(request, response) {
@@ -10604,10 +10649,18 @@ class GraphqlError extends Error {
 }
 
 const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query", "mediaType"];
+const FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
 const GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
 function graphql(request, query, options) {
-  if (typeof query === "string" && options && "query" in options) {
-    return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
+  if (options) {
+    if (typeof query === "string" && "query" in options) {
+      return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
+    }
+
+    for (const key in options) {
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
+      return Promise.reject(new Error(`[@octokit/graphql] "${key}" cannot be used as variable name`));
+    }
   }
 
   const parsedOptions = typeof query === "string" ? Object.assign({
