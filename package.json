@@ -1,6 +1,6 @@
 {
   "name": "rebase",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "private": true,
   "description": "Rebase pull requests in a repository",
   "main": "lib/main.js",
@@ -37,8 +37,8 @@
     "@actions/io": "1.0.2",
     "@octokit/graphql": "4.6.1",
     "checkout": "github:actions/checkout#v2",
-    "uuid": "8.3.2",
-    "graphql": "15"
+    "graphql": "15",
+    "uuid": "8.3.2"
   },
   "devDependencies": {
     "@types/jest": "26.0.20",
