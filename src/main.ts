@@ -19,7 +19,8 @@ async function run(): Promise<void> {
       base: core.getInput('base'),
       preRebaseCmd: core.getInput('command-to-run-before-rebase'),
       onConflictCommand: core.getInput('command-to-run-on-conflict'),
-      defaultBranch: core.getInput('default-branch')
+      defaultBranch: core.getInput('default-branch'),
+      handleDependabot: core.getInput('handle-dependabot') === 'true'
     }
     core.debug(`Inputs: ${inspect(inputs)}`)
 
@@ -30,7 +31,8 @@ async function run(): Promise<void> {
       inputs.repository,
       head,
       headOwner,
-      inputs.base
+      inputs.base,
+      inputs.handleDependabot
     )
 
     if (pulls.length > 0) {

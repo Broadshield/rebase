@@ -19,20 +19,45 @@ export class PullsHelper {
     repository: string,
     head: string,
     headOwner: string,
-    base: string
+    base: string,
+    handleDependabot: boolean
   ): Promise<Pull[]> {
     const [owner, repo] = repository.split('/')
     const params: OctokitTypes.RequestParameters = {
-      owner: owner,
-      repo: repo
+      owner,
+      repo
+    }
+    const commentParams: OctokitTypes.RequestParameters = {
+      owner,
+      repo,
+      body: '@dependabot rebase'
     }
     if (head.length > 0) params.head = head
     if (base.length > 0) params.base = base
+    const commentQuery = `mutation AddPullRequestCommentMutation($pullRequestId: ID!, $body: String!) {
+      addComment(input: {body: $body, subjectId: $pullRequestId}) {
+        
+        subject {
+          ... on PullRequest {
+            id
+            title
+            comments(last: 1) {
+              nodes {
+                id
+                body
+              }
+            }
+          }
+        }
+      }
+    }`
     const query = `query Pulls($owner: String!, $repo: String!, $head: String, $base: String) {
       repository(owner:$owner, name:$repo) {
         pullRequests(first: 100, states: OPEN, headRefName: $head, baseRefName: $base) {
           edges {
             node {
+              id
+              title
               baseRefName
               headRefName
               headRepository {
@@ -61,12 +86,23 @@ export class PullsHelper {
           (p.node.headRepositoryOwner.login == owner ||
             p.node.maintainerCanModify)
         ) {
-          return new Pull(
-            p.node.baseRefName,
-            p.node.headRepository.url,
-            p.node.headRepository.nameWithOwner,
-            p.node.headRefName
-          )
+          if (!(handleDependabot && p.node.title.startsWith('Bump '))) {
+            return new Pull(
+              p.node.baseRefName,
+              p.node.headRepository.url,
+              p.node.headRepository.nameWithOwner,
+              p.node.headRefName
+            )
+          } else {
+            // comment on PR
+            try {
+              commentParams.pullRequestId = p.node.id
+
+              this.graphqlClient<Comments>(commentQuery, commentParams)
+            } catch (error) {
+              core.warning(error)
+            }
+          }
         }
       })
       .filter(notUndefined)
@@ -78,6 +114,8 @@ export class PullsHelper {
 
 type Edge = {
   node: {
+    id: string
+    title: string
     baseRefName: string
     headRefName: string
     headRepository: {
@@ -95,6 +133,23 @@ type Pulls = {
   repository: {
     pullRequests: {
       edges: Edge[]
+    }
+  }
+}
+
+type Comments = {
+  addComment: {
+    subject: {
+      id: string
+      title: string
+      comments: {
+        nodes: [
+          {
+            id: string
+            body: string
+          }
+        ]
+      }
     }
   }
 }

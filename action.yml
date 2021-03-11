@@ -25,6 +25,11 @@ inputs:
     description: >
       The default branch for the repo, defaults to master
     default: master
+  handle-dependabot:
+    description: >
+      The Dependabot PR's require a PR Comment to rebase them.
+      When this is `true` a comment will be added: `@dependabot rebase`
+    default: 'true'
 runs:
   using: 'node12'
   main: 'dist/index.js'
