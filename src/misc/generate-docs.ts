@@ -1,7 +1,6 @@
-import * as fs from 'fs'
-import * as os from 'os'
-import * as path from 'path'
-import * as yaml from 'js-yaml'
+import {readFileSync, writeFileSync} from 'fs'
+import {EOL} from 'os'
+import {load} from 'js-yaml'
 
 //
 // SUMMARY
@@ -20,10 +19,10 @@ export function updateUsage(
   }
 
   // Load the action.yml
-  const actionYaml = yaml.load(fs.readFileSync(actionYamlPath).toString())
+  const actionYaml = load(readFileSync(actionYamlPath).toString())
 
   // Load the README
-  const originalReadme = fs.readFileSync(readmePath).toString()
+  const originalReadme = readFileSync(readmePath).toString()
 
   // Find the start token
   const startTokenIndex = originalReadme.indexOf(startToken)
@@ -116,7 +115,7 @@ export function updateUsage(
   newReadme.push(originalReadme.substr(endTokenIndex))
 
   // Write the new README
-  fs.writeFileSync(readmePath, newReadme.join(os.EOL))
+  writeFileSync(readmePath, newReadme.join(EOL))
 }
 
 // updateUsage(

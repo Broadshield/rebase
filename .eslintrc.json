@@ -2,17 +2,16 @@
   "env": { "node": true, "jest": true },
   "parser": "@typescript-eslint/parser",
   "parserOptions": { "ecmaVersion": 9, "sourceType": "module" },
+  "plugins": ["@typescript-eslint", "simple-import-sort", "jest", "github"],
   "extends": [
-    "eslint:recommended",
+    "plugin:github/recommended",
     "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:import/errors",
     "plugin:import/warnings",
     "plugin:import/typescript",
-    "plugin:prettier/recommended",
-    "prettier/@typescript-eslint"
+    "plugin:prettier/recommended"
   ],
-  "plugins": ["@typescript-eslint"],
   "rules": {
     "@typescript-eslint/camelcase": "off"
   }
