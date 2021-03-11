@@ -26,15 +26,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CommandOutput = exports.CommandHelper = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
@@ -61,35 +52,33 @@ class CommandHelper {
         }
         this.workingDirectory = workingDirectory;
     }
-    exec(allowAllExitCodes = false) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const result = new CommandOutput();
-            if (this.command) {
-                const env = {};
-                for (const key of Object.keys(process.env)) {
-                    env[key] = process.env[key];
-                }
-                const stdout = [];
-                const stderr = [];
-                const options = {
-                    cwd: this.workingDirectory,
-                    env,
-                    ignoreReturnCode: allowAllExitCodes,
-                    listeners: {
-                        stdout: (data) => {
-                            stdout.push(data.toString());
-                        },
-                        stderr: (data) => {
-                            stderr.push(data.toString());
-                        }
-                    }
-                };
-                result.exitCode = yield exec.exec(`"${this.command}"`, this.args, options);
-                result.stdout = stdout.join('').trim();
-                result.stderr = stderr.join('').trim();
+    async exec(allowAllExitCodes = false) {
+        const result = new CommandOutput();
+        if (this.command) {
+            const env = {};
+            for (const key of Object.keys(process.env)) {
+                env[key] = process.env[key];
             }
-            return result;
-        });
+            const stdout = [];
+            const stderr = [];
+            const options = {
+                cwd: this.workingDirectory,
+                env,
+                ignoreReturnCode: allowAllExitCodes,
+                listeners: {
+                    stdout: (data) => {
+                        stdout.push(data.toString());
+                    },
+                    stderr: (data) => {
+                        stderr.push(data.toString());
+                    }
+                }
+            };
+            result.exitCode = await exec.exec(`"${this.command}"`, this.args, options);
+            result.stdout = stdout.join('').trim();
+            result.stderr = stderr.join('').trim();
+        }
+        return result;
     }
 }
 exports.CommandHelper = CommandHelper;
@@ -129,15 +118,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitCommandManager = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
@@ -151,254 +131,216 @@ class GitCommandManager {
         this.workingDirectory = workingDirectory;
         this.gitPath = gitPath;
     }
-    static create(workingDirectory) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const gitPath = yield io.which('git', true);
-            return new GitCommandManager(workingDirectory, gitPath);
-        });
+    static async create(workingDirectory) {
+        const gitPath = await io.which('git', true);
+        return new GitCommandManager(workingDirectory, gitPath);
     }
     setIdentityGitOptions(identityGitOptions) {
         this.identityGitOptions = identityGitOptions;
     }
-    reset() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['reset', '--hard'];
-            yield this.exec(args);
-        });
+    async reset() {
+        const args = ['reset', '--hard'];
+        await this.exec(args);
     }
-    checkout(ref, startPoint) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['checkout', '--progress'];
-            if (startPoint) {
-                args.push('-B', ref, startPoint);
-            }
-            else {
-                args.push(ref);
-            }
-            yield this.exec(args);
-        });
+    async checkout(ref, startPoint) {
+        const args = ['checkout', '--progress'];
+        if (startPoint) {
+            args.push('-B', ref, startPoint);
+        }
+        else {
+            args.push(ref);
+        }
+        await this.exec(args);
     }
-    cherryPick(options, allowAllExitCodes = false) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['cherry-pick'];
-            if (this.identityGitOptions) {
-                args.unshift(...this.identityGitOptions);
-            }
-            if (options) {
-                args.push(...options);
-            }
-            return yield this.exec(args, allowAllExitCodes);
-        });
+    async cherryPick(options, allowAllExitCodes = false) {
+        const args = ['cherry-pick'];
+        if (this.identityGitOptions) {
+            args.unshift(...this.identityGitOptions);
+        }
+        if (options) {
+            args.push(...options);
+        }
+        return await this.exec(args, allowAllExitCodes);
     }
-    commit(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['commit'];
-            if (this.identityGitOptions) {
-                args.unshift(...this.identityGitOptions);
-            }
-            if (options) {
-                args.push(...options);
-            }
-            yield this.exec(args);
-        });
+    async commit(options) {
+        const args = ['commit'];
+        if (this.identityGitOptions) {
+            args.unshift(...this.identityGitOptions);
+        }
+        if (options) {
+            args.push(...options);
+        }
+        await this.exec(args);
     }
-    config(configKey, configValue, globalConfig) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.exec([
-                'config',
-                globalConfig ? '--global' : '--local',
-                configKey,
-                configValue
-            ]);
-        });
+    async config(configKey, configValue, globalConfig) {
+        await this.exec([
+            'config',
+            globalConfig ? '--global' : '--local',
+            configKey,
+            configValue
+        ]);
     }
-    configExists(configKey, configValue = '.', globalConfig) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const output = yield this.exec([
-                'config',
-                globalConfig ? '--global' : '--local',
-                '--name-only',
-                '--get-regexp',
-                configKey,
-                configValue
-            ], true);
-            return output.exitCode === 0;
-        });
+    async configExists(configKey, configValue = '.', globalConfig) {
+        const output = await this.exec([
+            'config',
+            globalConfig ? '--global' : '--local',
+            '--name-only',
+            '--get-regexp',
+            configKey,
+            configValue
+        ], true);
+        return output.exitCode === 0;
     }
-    diff(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['-c', 'core.pager=cat', 'diff'];
-            if (options) {
-                args.push(...options);
-            }
-            const output = yield this.exec(args);
-            return output.stdout.trim();
-        });
+    async diff(options) {
+        const args = ['-c', 'core.pager=cat', 'diff'];
+        if (options) {
+            args.push(...options);
+        }
+        const output = await this.exec(args);
+        return output.stdout.trim();
     }
-    fetch(refSpec, remoteName, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['-c', 'protocol.version=2', 'fetch'];
-            if (!refSpec.some(x => x === tagsRefSpec)) {
-                args.push('--no-tags');
-            }
-            args.push('--progress', '--no-recurse-submodules');
-            if (utils.fileExistsSync(path.join(this.workingDirectory, '.git', 'shallow'))) {
-                args.push('--unshallow');
-            }
-            if (options) {
-                args.push(...options);
-            }
-            if (remoteName) {
-                args.push(remoteName);
-            }
-            else {
-                args.push('origin');
-            }
-            for (const arg of refSpec) {
-                args.push(arg);
-            }
-            yield this.exec(args);
-        });
+    async fetch(refSpec, remoteName, options) {
+        const args = ['-c', 'protocol.version=2', 'fetch'];
+        if (!refSpec.some(x => x === tagsRefSpec)) {
+            args.push('--no-tags');
+        }
+        args.push('--progress', '--no-recurse-submodules');
+        if (utils.fileExistsSync(path.join(this.workingDirectory, '.git', 'shallow'))) {
+            args.push('--unshallow');
+        }
+        if (options) {
+            args.push(...options);
+        }
+        if (remoteName) {
+            args.push(remoteName);
+        }
+        else {
+            args.push('origin');
+        }
+        for (const arg of refSpec) {
+            args.push(arg);
+        }
+        await this.exec(args);
     }
-    getConfigValue(configKey, configValue = '.') {
-        return __awaiter(this, void 0, void 0, function* () {
-            const output = yield this.exec([
-                'config',
-                '--local',
-                '--get-regexp',
-                configKey,
-                configValue
-            ]);
-            return output.stdout.trim().split(`${configKey} `)[1];
-        });
+    async getConfigValue(configKey, configValue = '.') {
+        const output = await this.exec([
+            'config',
+            '--local',
+            '--get-regexp',
+            configKey,
+            configValue
+        ]);
+        return output.stdout.trim().split(`${configKey} `)[1];
     }
     getWorkingDirectory() {
         return this.workingDirectory;
     }
-    isDirty(untracked) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const diffArgs = ['--abbrev=40', '--full-index', '--raw'];
-            // Check staged changes
-            if (yield this.diff([...diffArgs, '--staged'])) {
-                return true;
-            }
-            // Check working index changes
-            if (yield this.diff(diffArgs)) {
-                return true;
-            }
-            // Check untracked changes
-            if (untracked && (yield this.status(['--porcelain', '-unormal']))) {
-                return true;
-            }
-            return false;
-        });
+    async isDirty(untracked) {
+        const diffArgs = ['--abbrev=40', '--full-index', '--raw'];
+        // Check staged changes
+        if (await this.diff([...diffArgs, '--staged'])) {
+            return true;
+        }
+        // Check working index changes
+        if (await this.diff(diffArgs)) {
+            return true;
+        }
+        // Check untracked changes
+        if (untracked && (await this.status(['--porcelain', '-unormal']))) {
+            return true;
+        }
+        return false;
     }
-    push(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['push'];
-            if (options) {
-                args.push(...options);
-            }
-            yield this.exec(args);
-        });
+    async push(options) {
+        const args = ['push'];
+        if (options) {
+            args.push(...options);
+        }
+        await this.exec(args);
     }
-    revList(commitExpression, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['rev-list'];
-            if (options) {
-                args.push(...options);
-            }
-            args.push(...commitExpression);
-            const output = yield this.exec(args);
-            return output.stdout.trim();
-        });
+    async revList(commitExpression, options) {
+        const args = ['rev-list'];
+        if (options) {
+            args.push(...options);
+        }
+        args.push(...commitExpression);
+        const output = await this.exec(args);
+        return output.stdout.trim();
     }
-    revParse(ref, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['rev-parse'];
-            if (options) {
-                args.push(...options);
-            }
-            args.push(ref);
-            const output = yield this.exec(args);
-            return output.stdout.trim();
-        });
+    async revParse(ref, options) {
+        const args = ['rev-parse'];
+        if (options) {
+            args.push(...options);
+        }
+        args.push(ref);
+        const output = await this.exec(args);
+        return output.stdout.trim();
     }
-    status(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['status'];
-            if (options) {
-                args.push(...options);
-            }
-            const output = yield this.exec(args);
-            return output.stdout.trim();
-        });
+    async status(options) {
+        const args = ['status'];
+        if (options) {
+            args.push(...options);
+        }
+        const output = await this.exec(args);
+        return output.stdout.trim();
     }
-    symbolicRef(ref, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['symbolic-ref', ref];
-            if (options) {
-                args.push(...options);
-            }
-            const output = yield this.exec(args);
-            return output.stdout.trim();
-        });
+    async symbolicRef(ref, options) {
+        const args = ['symbolic-ref', ref];
+        if (options) {
+            args.push(...options);
+        }
+        const output = await this.exec(args);
+        return output.stdout.trim();
     }
-    tryConfigUnset(configKey, configValue = '.', globalConfig) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const output = yield this.exec([
-                'config',
-                globalConfig ? '--global' : '--local',
-                '--unset',
-                configKey,
-                configValue
-            ], true);
-            return output.exitCode === 0;
-        });
+    async tryConfigUnset(configKey, configValue = '.', globalConfig) {
+        const output = await this.exec([
+            'config',
+            globalConfig ? '--global' : '--local',
+            '--unset',
+            configKey,
+            configValue
+        ], true);
+        return output.exitCode === 0;
     }
-    tryGetRemoteUrl() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const output = yield this.exec(['config', '--local', '--get', 'remote.origin.url'], true);
-            if (output.exitCode !== 0) {
-                return '';
-            }
-            const stdout = output.stdout.trim();
-            if (stdout.includes('\n')) {
-                return '';
-            }
-            return stdout;
-        });
+    async tryGetRemoteUrl() {
+        const output = await this.exec(['config', '--local', '--get', 'remote.origin.url'], true);
+        if (output.exitCode !== 0) {
+            return '';
+        }
+        const stdout = output.stdout.trim();
+        if (stdout.includes('\n')) {
+            return '';
+        }
+        return stdout;
     }
-    exec(args, allowAllExitCodes = false) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const result = new GitOutput();
-            const env = {};
-            for (const key of Object.keys(process.env)) {
-                env[key] = process.env[key];
-            }
-            const stdout = [];
-            const stderr = [];
-            const options = {
-                cwd: this.workingDirectory,
-                env,
-                ignoreReturnCode: allowAllExitCodes,
-                listeners: {
-                    stdout: (data) => {
-                        stdout.push(data.toString());
-                    },
-                    stderr: (data) => {
-                        stderr.push(data.toString());
-                    }
+    async exec(args, allowAllExitCodes = false) {
+        const result = new GitOutput();
+        const env = {};
+        for (const key of Object.keys(process.env)) {
+            env[key] = process.env[key];
+        }
+        const stdout = [];
+        const stderr = [];
+        const options = {
+            cwd: this.workingDirectory,
+            env,
+            ignoreReturnCode: allowAllExitCodes,
+            listeners: {
+                stdout: (data) => {
+                    stdout.push(data.toString());
+                },
+                stderr: (data) => {
+                    stderr.push(data.toString());
                 }
-            };
-            core.debug(`[stdin] ${this.gitPath} ${args.join(' ')}`);
-            result.exitCode = yield exec.exec(`"${this.gitPath}"`, args, options);
-            result.stdout = stdout.join('');
-            core.debug(`[stdout] ${result.stdout}`);
-            result.stderr = stderr.join('');
-            core.debug(`[stderr] ${result.stderr}`);
-            return result;
-        });
+            }
+        };
+        core.debug(`[stdin] ${this.gitPath} ${args.join(' ')}`);
+        result.exitCode = await exec.exec(`"${this.gitPath}"`, args, options);
+        result.stdout = stdout.join('');
+        core.debug(`[stdout] ${result.stdout}`);
+        result.stderr = stderr.join('');
+        core.debug(`[stderr] ${result.stderr}`);
+        return result;
     }
 }
 exports.GitCommandManager = GitCommandManager;
@@ -461,15 +403,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const io = __importStar(__nccwpck_require__(7436));
@@ -481,78 +414,76 @@ const pulls_helper_1 = __nccwpck_require__(3633);
 const rebase_helper_1 = __nccwpck_require__(7965);
 const util_1 = __nccwpck_require__(1669);
 const uuid_1 = __nccwpck_require__(4552);
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const errorList = [];
-        try {
-            const inputs = {
-                token: core.getInput('token'),
-                repository: core.getInput('repository'),
-                head: core.getInput('head'),
-                base: core.getInput('base'),
-                preRebaseCmd: core.getInput('command-to-run-before-rebase'),
-                onConflictCommand: core.getInput('command-to-run-on-conflict'),
-                defaultBranch: core.getInput('default-branch'),
-                handleDependabot: core.getInput('handle-dependabot') === 'true'
-            };
-            core.debug(`Inputs: ${util_1.inspect(inputs)}`);
-            const [headOwner, head] = inputValidator.parseHead(inputs.head);
-            const pullsHelper = new pulls_helper_1.PullsHelper(inputs.token);
-            const pulls = yield pullsHelper.get(inputs.repository, head, headOwner, inputs.base, inputs.handleDependabot);
-            if (pulls.length > 0) {
-                core.info(`${pulls.length} pull request(s) found.`);
-                // Checkout
-                const path = uuid_1.v4();
-                process.env['INPUT_PATH'] = path;
-                process.env['INPUT_REF'] = inputs.defaultBranch;
-                process.env['INPUT_FETCH-DEPTH'] = '0';
-                process.env['INPUT_PERSIST-CREDENTIALS'] = 'true';
-                const sourceSettings = inputHelper.getInputs();
-                core.debug(`sourceSettings: ${util_1.inspect(sourceSettings)}`);
-                yield gitSourceProvider.getSource(sourceSettings);
-                // Rebase
-                // Create a git command manager
-                const git = yield git_command_manager_1.GitCommandManager.create(sourceSettings.repositoryPath);
-                const rebaseHelper = new rebase_helper_1.RebaseHelper(git, inputs.onConflictCommand, inputs.preRebaseCmd);
-                let rebasedCount = 0;
-                let failedRebaseCount = 0;
-                for (const pull of pulls) {
-                    try {
-                        const result = yield rebaseHelper.rebase(pull);
-                        if (result) {
-                            rebasedCount++;
-                        }
-                        else {
-                            failedRebaseCount++;
-                        }
+async function run() {
+    const errorList = [];
+    try {
+        const inputs = {
+            token: core.getInput('token'),
+            repository: core.getInput('repository'),
+            head: core.getInput('head'),
+            base: core.getInput('base'),
+            preRebaseCmd: core.getInput('command-to-run-before-rebase'),
+            onConflictCommand: core.getInput('command-to-run-on-conflict'),
+            defaultBranch: core.getInput('default-branch'),
+            handleDependabot: core.getInput('handle-dependabot') === 'true'
+        };
+        core.debug(`Inputs: ${util_1.inspect(inputs)}`);
+        const [headOwner, head] = inputValidator.parseHead(inputs.head);
+        const pullsHelper = new pulls_helper_1.PullsHelper(inputs.token);
+        const pulls = await pullsHelper.get(inputs.repository, head, headOwner, inputs.base, inputs.handleDependabot);
+        if (pulls.length > 0) {
+            core.info(`${pulls.length} pull request(s) found.`);
+            // Checkout
+            const path = uuid_1.v4();
+            process.env['INPUT_PATH'] = path;
+            process.env['INPUT_REF'] = inputs.defaultBranch;
+            process.env['INPUT_FETCH-DEPTH'] = '0';
+            process.env['INPUT_PERSIST-CREDENTIALS'] = 'true';
+            const sourceSettings = inputHelper.getInputs();
+            core.debug(`sourceSettings: ${util_1.inspect(sourceSettings)}`);
+            await gitSourceProvider.getSource(sourceSettings);
+            // Rebase
+            // Create a git command manager
+            const git = await git_command_manager_1.GitCommandManager.create(sourceSettings.repositoryPath);
+            const rebaseHelper = new rebase_helper_1.RebaseHelper(git, inputs.onConflictCommand, inputs.preRebaseCmd);
+            let rebasedCount = 0;
+            let failedRebaseCount = 0;
+            for (const pull of pulls) {
+                try {
+                    const result = await rebaseHelper.rebase(pull);
+                    if (result) {
+                        rebasedCount++;
                     }
-                    catch (error) {
-                        errorList.push(error.message);
+                    else {
+                        failedRebaseCount++;
                     }
                 }
-                // Output count of successful rebases
-                core.setOutput('rebased-count', rebasedCount);
-                core.setOutput('failed-rebased-count', failedRebaseCount);
-                // Delete the repository
-                core.debug(`Removing repo at '${sourceSettings.repositoryPath}'`);
-                yield io.rmRF(sourceSettings.repositoryPath);
+                catch (error) {
+                    errorList.push(error.message);
+                }
             }
-            else {
-                core.info('No pull requests found.');
-            }
+            // Output count of successful rebases
+            core.setOutput('rebased-count', rebasedCount);
+            core.setOutput('failed-rebased-count', failedRebaseCount);
+            // Delete the repository
+            core.debug(`Removing repo at '${sourceSettings.repositoryPath}'`);
+            await io.rmRF(sourceSettings.repositoryPath);
         }
-        catch (error) {
-            errorList.push(error.message);
+        else {
+            core.info('No pull requests found.');
         }
-        finally {
-            for (const i of errorList) {
-                core.error(i);
-            }
-            if (errorList.length > 0) {
-                core.setFailed('There were errors');
-            }
+    }
+    catch (error) {
+        errorList.push(error.message);
+    }
+    finally {
+        for (const i of errorList) {
+            core.error(i);
         }
-    });
+        if (errorList.length > 0) {
+            core.setFailed('There were errors');
+        }
+    }
 }
 run();
 
@@ -583,15 +514,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Pull = exports.PullsHelper = void 0;
 const core = __importStar(__nccwpck_require__(2186));
@@ -605,23 +527,22 @@ class PullsHelper {
             }
         });
     }
-    get(repository, head, headOwner, base, handleDependabot) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const [owner, repo] = repository.split('/');
-            const params = {
-                owner,
-                repo
-            };
-            const commentParams = {
-                owner,
-                repo,
-                body: '@dependabot rebase'
-            };
-            if (head.length > 0)
-                params.head = head;
-            if (base.length > 0)
-                params.base = base;
-            const commentQuery = `mutation AddPullRequestCommentMutation($pullRequestId: ID!, $body: String!) {
+    async get(repository, head, headOwner, base, handleDependabot) {
+        const [owner, repo] = repository.split('/');
+        const params = {
+            owner,
+            repo
+        };
+        const commentParams = {
+            owner,
+            repo,
+            body: '@dependabot rebase'
+        };
+        if (head.length > 0)
+            params.head = head;
+        if (base.length > 0)
+            params.base = base;
+        const commentQuery = `mutation AddPullRequestCommentMutation($pullRequestId: ID!, $body: String!) {
       addComment(input: {body: $body, subjectId: $pullRequestId}) {
         
         subject {
@@ -638,7 +559,7 @@ class PullsHelper {
         }
       }
     }`;
-            const query = `query Pulls($owner: String!, $repo: String!, $head: String, $base: String) {
+        const query = `query Pulls($owner: String!, $repo: String!, $head: String, $base: String) {
       repository(owner:$owner, name:$repo) {
         pullRequests(first: 100, states: OPEN, headRefName: $head, baseRefName: $base) {
           edges {
@@ -660,31 +581,30 @@ class PullsHelper {
         }
       }
     }`;
-            const pulls = yield this.graphqlClient(query, params);
-            core.debug(`Pulls: ${util_1.inspect(pulls.repository.pullRequests.edges)}`);
-            const filteredPulls = pulls.repository.pullRequests.edges
-                .map(p => {
-                if (
-                // Filter on head owner since the query only filters on head ref
-                (headOwner.length == 0 ||
-                    p.node.headRepositoryOwner.login == headOwner) &&
-                    // Filter heads from forks where 'maintainer can modify' is false
-                    (p.node.headRepositoryOwner.login == owner ||
-                        p.node.maintainerCanModify)) {
-                    if (!(handleDependabot && p.node.title.startsWith('Bump '))) {
-                        return new Pull(p.node.baseRefName, p.node.headRepository.url, p.node.headRepository.nameWithOwner, p.node.headRefName);
-                    }
-                    else {
-                        // comment on PR
-                        commentParams.pullRequestId = p.node.id;
-                        this.graphqlClient(commentQuery, commentParams).catch(error => core.warning(error));
-                    }
+        const pulls = await this.graphqlClient(query, params);
+        core.debug(`Pulls: ${util_1.inspect(pulls.repository.pullRequests.edges)}`);
+        const filteredPulls = pulls.repository.pullRequests.edges
+            .map(p => {
+            if (
+            // Filter on head owner since the query only filters on head ref
+            (headOwner.length == 0 ||
+                p.node.headRepositoryOwner.login == headOwner) &&
+                // Filter heads from forks where 'maintainer can modify' is false
+                (p.node.headRepositoryOwner.login == owner ||
+                    p.node.maintainerCanModify)) {
+                if (!(handleDependabot && p.node.title.startsWith('Bump '))) {
+                    return new Pull(p.node.baseRefName, p.node.headRepository.url, p.node.headRepository.nameWithOwner, p.node.headRefName);
                 }
-            })
-                .filter(notUndefined);
-            core.debug(`filteredPulls: ${util_1.inspect(filteredPulls)}`);
-            return filteredPulls;
-        });
+                else {
+                    // comment on PR
+                    commentParams.pullRequestId = p.node.id;
+                    this.graphqlClient(commentQuery, commentParams).catch(error => core.warning(error));
+                }
+            }
+        })
+            .filter(notUndefined);
+        core.debug(`filteredPulls: ${util_1.inspect(filteredPulls)}`);
+        return filteredPulls;
     }
 }
 exports.PullsHelper = PullsHelper;
@@ -728,15 +648,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.RebaseHelper = void 0;
 const core = __importStar(__nccwpck_require__(2186));
@@ -750,95 +661,89 @@ class RebaseHelper {
         this.conflictCommand = new command_helper_1.CommandHelper(this.git.getWorkingDirectory(), this.onConflictCommand, undefined);
         this.rebaseCmd = new command_helper_1.CommandHelper(this.git.getWorkingDirectory(), this.preRebaseCmd, undefined);
     }
-    rebase(pull) {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.info(`Attempting rebase of head ref '${pull.headRef}' at '${pull.headRepoName}'.`);
-            // Add head remote
-            const remoteName = uuid_1.v4();
-            yield this.git.exec(['remote', 'add', remoteName, pull.headRepoUrl]);
-            // Fetch
-            core.startGroup(`Fetching head ref '${pull.headRef}'.`);
-            yield this.git.fetch([pull.headRef], remoteName);
+    async rebase(pull) {
+        core.info(`Attempting rebase of head ref '${pull.headRef}' at '${pull.headRepoName}'.`);
+        // Add head remote
+        const remoteName = uuid_1.v4();
+        await this.git.exec(['remote', 'add', remoteName, pull.headRepoUrl]);
+        // Fetch
+        core.startGroup(`Fetching head ref '${pull.headRef}'.`);
+        await this.git.fetch([pull.headRef], remoteName);
+        core.endGroup();
+        // Checkout
+        core.startGroup(`Checking out head ref '${pull.headRef}'.`);
+        const localRef = uuid_1.v4();
+        await this.git.checkout(localRef, `refs/remotes/${remoteName}/${pull.headRef}`);
+        core.endGroup();
+        // Get/set the committer
+        core.startGroup(`Setting committer to match the last commit on the head ref.`);
+        const sha = await this.git.revParse('HEAD');
+        const committerName = await this.log1([`--format='%cn'`, sha]);
+        const committerEmail = await this.log1([`--format='%ce'`, sha]);
+        await this.git.config('user.name', committerName);
+        await this.git.config('user.email', committerEmail);
+        core.endGroup();
+        // Rebase
+        core.startGroup(`Rebasing on base ref '${pull.baseRef}'.`);
+        const result = await this.tryRebase('origin', pull.baseRef);
+        core.endGroup();
+        if (result == RebaseResult.Rebased) {
+            core.startGroup(`Pushing changes to head ref '${pull.headRef}'`);
+            await this.git.push([
+                '--force-with-lease',
+                remoteName,
+                `HEAD:${pull.headRef}`
+            ]);
             core.endGroup();
-            // Checkout
-            core.startGroup(`Checking out head ref '${pull.headRef}'.`);
-            const localRef = uuid_1.v4();
-            yield this.git.checkout(localRef, `refs/remotes/${remoteName}/${pull.headRef}`);
-            core.endGroup();
-            // Get/set the committer
-            core.startGroup(`Setting committer to match the last commit on the head ref.`);
-            const sha = yield this.git.revParse('HEAD');
-            const committerName = yield this.log1([`--format='%cn'`, sha]);
-            const committerEmail = yield this.log1([`--format='%ce'`, sha]);
-            yield this.git.config('user.name', committerName);
-            yield this.git.config('user.email', committerEmail);
-            core.endGroup();
-            // Rebase
-            core.startGroup(`Rebasing on base ref '${pull.baseRef}'.`);
-            const result = yield this.tryRebase('origin', pull.baseRef);
-            core.endGroup();
-            if (result == RebaseResult.Rebased) {
-                core.startGroup(`Pushing changes to head ref '${pull.headRef}'`);
-                yield this.git.push([
-                    '--force-with-lease',
-                    remoteName,
-                    `HEAD:${pull.headRef}`
-                ]);
-                core.endGroup();
-                core.info(`Head ref '${pull.headRef}' successfully rebased.`);
-                return true;
-            }
-            else if (result == RebaseResult.AlreadyUpToDate) {
-                core.info(`Head ref '${pull.headRef}' is already up to date with the base.`);
-            }
-            else if (result == RebaseResult.Failed) {
-                core.warning(`Rebase of head ref '${pull.headRef}' failed. Conflicts must be resolved manually.`);
-            }
-            return false;
-        });
+            core.info(`Head ref '${pull.headRef}' successfully rebased.`);
+            return true;
+        }
+        else if (result == RebaseResult.AlreadyUpToDate) {
+            core.info(`Head ref '${pull.headRef}' is already up to date with the base.`);
+        }
+        else if (result == RebaseResult.Failed) {
+            core.warning(`Rebase of head ref '${pull.headRef}' failed. Conflicts must be resolved manually.`);
+        }
+        return false;
     }
-    log1(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const params = ['log', '-1'];
-            params.push(...options);
-            const output = yield this.git.exec(params);
-            return output.stdout.trim();
-        });
+    async log1(options) {
+        const params = ['log', '-1'];
+        params.push(...options);
+        const output = await this.git.exec(params);
+        return output.stdout.trim();
     }
-    tryRebase(remoteName, ref) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (this.preRebaseCmd) {
-                    try {
-                        core.debug(`Running pre-rebase command: ${this.preRebaseCmd}`);
-                        yield this.rebaseCmd.exec();
-                    }
-                    catch (_a) {
-                        core.warning(`preRebaseCmd '${this.preRebaseCmd}' failed`);
-                    }
+    async tryRebase(remoteName, ref) {
+        try {
+            if (this.preRebaseCmd) {
+                try {
+                    core.debug(`Running pre-rebase command: ${this.preRebaseCmd}`);
+                    await this.rebaseCmd.exec();
                 }
-                const result = yield this.git.exec(['rebase', `${remoteName}/${ref}`]);
-                return result ? RebaseResult.Rebased : RebaseResult.AlreadyUpToDate;
+                catch {
+                    core.warning(`preRebaseCmd '${this.preRebaseCmd}' failed`);
+                }
             }
-            catch (_b) {
-                if (this.onConflictCommand != undefined) {
-                    try {
-                        core.debug(`Running conflict command: ${this.onConflictCommand}`);
-                        yield this.conflictCommand.exec();
-                        const gitResult = yield this.git.exec(['rebase', `--continue`]);
-                        return gitResult ? RebaseResult.Rebased : RebaseResult.AlreadyUpToDate;
-                    }
-                    catch (_c) {
-                        yield this.git.exec(['rebase', `--abort`]);
-                        // await this.git.exec(['revert', `--no-edit`])
-                        return RebaseResult.Failed;
-                    }
+            const result = await this.git.exec(['rebase', `${remoteName}/${ref}`]);
+            return result ? RebaseResult.Rebased : RebaseResult.AlreadyUpToDate;
+        }
+        catch {
+            if (this.onConflictCommand != undefined) {
+                try {
+                    core.debug(`Running conflict command: ${this.onConflictCommand}`);
+                    await this.conflictCommand.exec();
+                    const gitResult = await this.git.exec(['rebase', `--continue`]);
+                    return gitResult ? RebaseResult.Rebased : RebaseResult.AlreadyUpToDate;
                 }
-                else {
+                catch {
+                    await this.git.exec(['rebase', `--abort`]);
+                    // await this.git.exec(['revert', `--no-edit`])
                     return RebaseResult.Failed;
                 }
             }
-        });
+            else {
+                return RebaseResult.Failed;
+            }
+        }
     }
 }
 exports.RebaseHelper = RebaseHelper;

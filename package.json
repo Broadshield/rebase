@@ -36,6 +36,7 @@
     "@actions/core": "1.2.6",
     "@actions/io": "1.0.2",
     "@octokit/graphql": "4.6.1",
+    "@tsconfig/node12": "^1.0.7",
     "checkout": "github:actions/checkout#v2",
     "graphql": "15",
     "uuid": "8.3.2"
