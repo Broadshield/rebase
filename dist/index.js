@@ -676,13 +676,8 @@ class PullsHelper {
                     }
                     else {
                         // comment on PR
-                        try {
-                            commentParams.pullRequestId = p.node.id;
-                            this.graphqlClient(commentQuery, commentParams);
-                        }
-                        catch (error) {
-                            core.warning(error);
-                        }
+                        commentParams.pullRequestId = p.node.id;
+                        this.graphqlClient(commentQuery, commentParams).catch(error => core.warning(error));
                     }
                 }
             })
